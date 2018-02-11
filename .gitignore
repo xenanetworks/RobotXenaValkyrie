@@ -1,0 +1,11 @@
+.idea
+.project
+.pydevproject
+red.xml
+
+libspecs
+
+*.html
+*.xml
+
+*.pyc
