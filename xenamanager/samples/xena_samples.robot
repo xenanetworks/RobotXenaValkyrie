@@ -18,7 +18,7 @@ Reserve All Ports
 
 *** Test Cases ***
 Connect
-    [Documentation]    Open session and connect to Xena Chassis
+    [Documentation]    Open session, connect to Xena Chassis and reserve ports
     Add Chassis        ${CHASSIS}
     Reserve All Ports
 
@@ -28,7 +28,7 @@ Investigate Configuration
     Log                    p_config = ${p_txmode}
     ${ps_packetlimit} =    Get Stream Attribute     @{PORTS}[0]    0    ps_packetlimit
     Log                    ps_packetlimit = ${ps_packetlimit}
-    ${headers} =           Get Packet Headers    @{PORTS}[0]    1
+    ${headers} =           Get Packet    @{PORTS}[0]    1
     Log                    headers = ${headers}
     &{header} =            Get Packet Header    @{PORTS}[0]    1    Ethernet
     Log Dictionary         ${header}
@@ -38,7 +38,6 @@ Investigate Configuration
     Log Dictionary         ${header}
 
 Build Configuration
-    Pass Execution         Dont care at this point...
     [Documentation]        Build new configuration for port 1
     Reset Port             @{PORTS}[1]
     Set Port Attributes    @{PORTS}[1]    p_txmode=NORMAL
@@ -47,7 +46,10 @@ Build Configuration
     Set Stream Attributes  @{PORTS}[1]    0    ps_packetlimit=80    ps_ratepps=10
     Add Stream             @{PORTS}[1]    stream 1
     # Call stream commands with stream name
-    Set Stream Attributes  @{PORTS}[1]    stream 1    ps_packetlimit=80    ps_ratepps=10
+    Set Stream Attributes  @{PORTS}[1]    stream 1   ps_packetlimit=80    ps_ratepps=10
+    # Order matters - add segments by their order.
+    Add Packet Headers     @{PORTS}[1]    0    IP    UDP
+    Add Packet Headers     @{PORTS}[1]    1    VLAN    IP6    TCP
 
 Miscelenious Operations
     Pass Execution         Dont care at this point...
@@ -71,3 +73,7 @@ Run Traffic
     &{pt_total_stats}  Set Variable    &{port_stats}[pt_total]
     Log Dictionary     ${pt_total_stats}
     Should Be Equal As Numbers    &{pt_total_stats}[packets]    16000  
+
+Disonnect
+    [Documentation]    Release all ports
+    Release Ports      @{PORTS}

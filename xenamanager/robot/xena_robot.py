@@ -16,17 +16,22 @@ Limitations:
 """
 
 import sys
+import os
 import getpass
 import logging
 import re
+from importlib import import_module
 from collections import OrderedDict
 
 from xenamanager.xena_app import init_xena
 from xenamanager.xena_statistics_view import XenaPortsStats, XenaStreamsStats, XenaTpldsStats
 
-
 __version__ = '0.2'
 ROBOT_LIBRARY_DOC_FORMAT = 'reST'
+
+python_path = os.path.dirname(sys.executable)
+site_packages_path = os.path.join(python_path, 'Lib', 'site-packages')
+pypacker_path = os.path.join(site_packages_path, 'pypacker')
 
 class XenaRobot():
     
@@ -45,8 +50,10 @@ class XenaRobot():
 
     def add_chassis(self, chassis='None', port=22611, password='xena'):
         """ Add chassis.
-
-        XenaManager-2G -> Add Chassis.
+        
+        :param chassis: chassis IP address
+        :param port: chassis port number
+        :param password: chassis password
         """
         self.xm.session.add_chassis(chassis, port, password)
 
@@ -212,10 +219,24 @@ class XenaRobot():
     # Packet headers.
     #
 
-    def get_packet_headers(self, port, stream):
+    def get_packet(self, port, stream):
+        """ Get packet as a printable string.
+
+        :param port: port index (zero based) or port location as used in reserve command.
+        :param stream: stream index (zero based) or stream name.
+        :return: string representation of stream packet. 
+        """        
         return self._stream_name_or_index_to_object(port, stream).get_packet_headers()
 
     def get_packet_header(self, port, stream, header):
+        """ Get packet header.
+
+        :param port: port index (zero based) or port location as used in reserve command.
+        :param stream: stream index (zero based) or stream name.
+        :param header: requested packet header.
+        :return: dictionary of <field: value>.
+        :rtype: dict of (str, str) 
+        """        
         header_body = self._get_packet_header(port, stream, header)
         fields_str = self._get_packet_header(port, stream, header)._summarize()
         fields = OrderedDict()
@@ -227,21 +248,40 @@ class XenaRobot():
             except Exception as _:
                 pass
         return fields
+    
+    def add_packet_headers(self, port, stream, *headers):
+        """ Add packet headers.
+
+        All headers will be added with some default values (not the same as Xena Manager default) and it is the test
+        responsibility to set them.
+
+        :param port: port index (zero based) or port location as used in reserve command.
+        :param stream: stream index (zero based) or stream name.
+        :param headers: list of header names to add (vlan, ip, ip6, tcp, etc.).
+        """        
+        packet_headers = self._stream_name_or_index_to_object(port, stream).get_packet_headers()
+        for header in headers:
+            if header.lower() == 'vlan':
+                header_py = 'ethernet.py'
+                header_class = 'Dot1Q'
+            else:
+                header_py = header.lower() + '.py'
+                header_class = header.upper()
+            for  dirpath, _, filenames in os.walk(pypacker_path):
+                if header_py in filenames:
+                    module_name = dirpath[len(site_packages_path) + 1:]
+            header_module = import_module(module_name.replace(os.path.sep, '.') + '.' + header_py[:-3])
+            header_object = getattr(header_module, header_class)()
+            if header == 'vlan':
+                packet_headers.vlan.append(header_object)
+            else:
+                packet_headers += header_object
+        self._stream_name_or_index_to_object(port, stream).set_packet_headers(packet_headers)
 
     def set_packet_header_field(self, port, stream, header, field, value):
         headers = self._stream_name_or_index_to_object(port, stream).get_packet_headers()
         setattr(getattr(headers, header.lower()), field, unicode(value))
         self._stream_name_or_index_to_object(port, stream).set_packet_headers(headers)
-
-    def _get_packet_header(self, port, stream, header):
-        headers = self._stream_name_or_index_to_object(port, stream).get_packet_headers()
-        if header.lower() == 'ethernet':
-            header_body = headers
-        elif header.lower().startswith('vlan'):
-            header_body = headers.vlan[int(re.findall('vlan\[([\d])\]', header.lower())[0])]
-        else:
-            header_body = getattr(headers, header.lower())
-        return header_body
 
     #
     # Modifiers.
@@ -260,7 +300,7 @@ class XenaRobot():
         pass
     
     #
-    # Basic 'backdoor' commands.
+    # Basic 'back-door' commands.
     #
 
     def exec_command(self, command):
@@ -280,18 +320,28 @@ class XenaRobot():
         """
         :rtype: xenamanager.xena_port.XenaPort
         """
-        return self.ports.values()[int(name_or_index)] if name_or_index.isdecimal() else self.ports[name_or_index]
+        return self.ports.values()[int(name_or_index)] if unicode(name_or_index).isdecimal() else self.ports[name_or_index]
 
     def _stream_name_or_index_to_object(self, port, name_or_index):
         """
         :rtype: xenamanager.xena_port.XenaPort
         """
-        if name_or_index.isdecimal():
+        if unicode(name_or_index).isdecimal():
             return self._port_name_or_index_to_object(port).streams[int(name_or_index)]
         else:
             for stream in self._port_name_or_index_to_object(port).streams.values():
                 if stream.name == name_or_index:
                     return stream
+
+    def _get_packet_header(self, port, stream, header):
+        headers = self._stream_name_or_index_to_object(port, stream).get_packet_headers()
+        if header.lower() == 'ethernet':
+            header_body = headers
+        elif header.lower().startswith('vlan'):
+            header_body = headers.vlan[int(re.findall('vlan\[([\d])\]', header.lower())[0])]
+        else:
+            header_body = getattr(headers, header.lower())
+        return header_body
 
 
 _view_name_2_object = {'port': XenaPortsStats,
