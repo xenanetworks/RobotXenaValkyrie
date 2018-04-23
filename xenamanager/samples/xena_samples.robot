@@ -36,6 +36,8 @@ Investigate Configuration
     Log Dictionary         ${header}
     &{header} =            Get Packet Header    @{PORTS}[0]    1    IP6
     Log Dictionary         ${header}
+    &{modifier} =          Get Modifier    @{PORTS}[0]    0    4
+    Log Dictionary         ${modifier}
 
 Build Configuration
     [Documentation]        Build new configuration for port 1
@@ -47,9 +49,16 @@ Build Configuration
     Add Stream             @{PORTS}[1]    stream 1
     # Call stream commands with stream name
     Set Stream Attributes  @{PORTS}[1]    stream 1   ps_packetlimit=80    ps_ratepps=10
-    # Order matters - add segments by their order.
-    Add Packet Headers     @{PORTS}[1]    0    IP    UDP
+    # Order matters - add segments by their order. But case does not...
+    Add Packet Headers     @{PORTS}[1]    0    ip    udp
+    Set Packet Header Fields     @{PORTS}[1]    0    ip    src_s=1.1.1.1
+    Set Packet Header Fields     @{PORTS}[1]    0    ip    dst_s=2.2.2.2
     Add Packet Headers     @{PORTS}[1]    1    VLAN    IP6    TCP
+    Set Packet Header Fields     @{PORTS}[1]    1    VLAN[0]    vid=17
+    Set Packet Header Fields     @{PORTS}[1]    1    IP6    src_s=11::11    dst_s=22::22
+    Add Modifier           @{PORTS}[1]    0    4 
+    Set Modifier Attributes      @{PORTS}[1]    0    4    min_val=10    max_val=20    action=decrement
+    Remove Modifier        @{PORTS}[1]    0    4 
 
 Miscelenious Operations
     Pass Execution         Dont care at this point...
