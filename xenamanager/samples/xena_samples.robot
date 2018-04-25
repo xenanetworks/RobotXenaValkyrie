@@ -4,6 +4,8 @@ Library    Collections
 Library    xena_robot.XenaRobot
 
 *** Variables ***
+${WS_DIR}       E:/Program Files/Wireshark
+${CAP_FILE}      C:/temp/robot_cap_file.pcap
 ${CHASSIS}      176.22.65.114
 @{PORTS}        ${CHASSIS}/6/4    ${CHASSIS}/6/5
 ${CONFIG_FILE}	${CURDIR}/test_config.xpc
@@ -51,6 +53,7 @@ Build Configuration
     Set Stream Attributes  @{PORTS}[1]    stream 1   ps_packetlimit=80    ps_ratepps=10
     # Order matters - add segments by their order. But case does not...
     Add Packet Headers     @{PORTS}[1]    0    ip    udp
+    Set Packet Header Fields     @{PORTS}[1]    0    ethernet    src_s=11:11:11:11:11:11
     Set Packet Header Fields     @{PORTS}[1]    0    ip    src_s=1.1.1.1
     Set Packet Header Fields     @{PORTS}[1]    0    ip    dst_s=2.2.2.2
     Add Packet Headers     @{PORTS}[1]    1    VLAN    IP6    TCP
@@ -58,7 +61,6 @@ Build Configuration
     Set Packet Header Fields     @{PORTS}[1]    1    IP6    src_s=11::11    dst_s=22::22
     Add Modifier           @{PORTS}[1]    0    4 
     Set Modifier Attributes      @{PORTS}[1]    0    4    min_val=10    max_val=20    action=decrement
-    Remove Modifier        @{PORTS}[1]    0    4 
 
 Miscelenious Operations
     Pass Execution         Dont care at this point...
@@ -71,17 +73,22 @@ Miscelenious Operations
     Log                    rc = ${rc}
 
 Run Traffic
-    Pass Execution     Dont care at this point...
     [Documentation]    Run traffic and get statistics
-    Clear Statistics   0 1
+    Start Capture      0
+    Clear Statistics   0    1
     Run Traffic Blocking
+    Stop Capture       0
     &{stats} =         Get Statistics    Port
     ${keys} =          Get Dictionary Keys    ${stats}
     &{port_stats}      Set Variable    &{stats}[176.22.65.114/6/4]
     Log Dictionary     ${port_stats}
     &{pt_total_stats}  Set Variable    &{port_stats}[pt_total]
     Log Dictionary     ${pt_total_stats}
-    Should Be Equal As Numbers    &{pt_total_stats}[packets]    16000  
+    Should Be Equal As Numbers    &{pt_total_stats}[packets]    16000
+    Create Tshark      ${WS_DIR}
+    Save Capture To File    0    ${CAP_FILE}    pcap
+    ${num_packets} =   Analyze Packets    ${CAP_FILE}    ip.src    ip.dst
+    Log                num_packets = ${num_packets}
 
 Disonnect
     [Documentation]    Release all ports

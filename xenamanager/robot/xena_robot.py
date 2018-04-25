@@ -25,10 +25,12 @@ from importlib import import_module
 from collections import OrderedDict
 
 from xenamanager.xena_app import init_xena
+from xenamanager.xena_port import XenaCaptureBufferType
 from xenamanager.xena_stream import XenaModifierType, XenaModifierAction
 from xenamanager.xena_statistics_view import XenaPortsStats, XenaStreamsStats, XenaTpldsStats
+from xenamanager.xena_tshark import Tshark, TsharkAnalyzer
 
-__version__ = '0.2'
+__version__ = '0.3.0'
 ROBOT_LIBRARY_DOC_FORMAT = 'reST'
 
 python_path = os.path.dirname(sys.executable)
@@ -50,6 +52,7 @@ class XenaRobot():
         self.logger.setLevel(logging.DEBUG)
         self.logger.addHandler(logging.StreamHandler(sys.stdout))
         self.xm = init_xena(self.logger, user)
+        tshark = None
 
     def add_chassis(self, chassis='None', port=22611, password='xena'):
         """ Add chassis.
@@ -115,7 +118,7 @@ class XenaRobot():
         :param ports: ports indices (zero based) or ports locations as used in reserve command. If empty - start
                       traffic on all ports.
         """
-        self.xm.session.start_traffic(False, **self._port_names_or_indices_to_objects(*ports))
+        self.xm.session.start_traffic(False, *self._port_names_or_indices_to_objects(*ports))
 
     def run_traffic_blocking(self, *ports):
         """ Start traffic on list of ports and wait until all traffic is finished.
@@ -123,7 +126,7 @@ class XenaRobot():
         :param ports: ports indices (zero based) or ports locations as used in reserve command. If empty - start
                       traffic on all ports.
         """
-        self.xm.session.start_traffic(True, **self._port_names_or_indices_to_objects(*ports))
+        self.xm.session.start_traffic(True, *self._port_names_or_indices_to_objects(*ports))
 
     def stop_traffic(self, *ports):
         """ Stop traffic on list of ports.
@@ -131,7 +134,7 @@ class XenaRobot():
         :param ports: ports indices (zero based) or ports locations as used in reserve command. If empty - stop
                       traffic on all ports.
         """
-        self.xm.session.stop_traffic(**self._port_names_or_indices_to_objects(*ports))
+        self.xm.session.stop_traffic(*self._port_names_or_indices_to_objects(*ports))
 
     def start_capture(self, *ports):
         """ Start capture on list of ports.
@@ -139,7 +142,7 @@ class XenaRobot():
         :param ports: ports indices (zero based) or ports locations as used in reserve command. If empty - start
                       capture on all ports.
         """
-        self.xm.session.start_capture(**self._port_names_or_indices_to_objects(*ports))
+        self.xm.session.start_capture(*self._port_names_or_indices_to_objects(*ports))
 
     def stop_capture(self, *ports):
         """ Stop capture on list of ports.
@@ -147,7 +150,7 @@ class XenaRobot():
         :param ports: ports indices (zero based) or ports locations as used in reserve command. If empty - stop
                       capture on all ports.
         """
-        self.xm.session.stop_capture(False, **self._port_names_or_indices_to_objects(*ports))
+        self.xm.session.stop_capture(*self._port_names_or_indices_to_objects(*ports))
 
     def get_statistics(self, view='port'):
         """ Get statistics for all ports/streams/TPLDs.
@@ -389,6 +392,23 @@ class XenaRobot():
                 setattr(modifier, attribute.lower(), XenaModifierAction[value.lower()])
             else:
                 setattr(modifier, attribute.lower(), value.lower())
+
+    #
+    # Capture.
+    #
+
+    def create_tshark(self, wireshark_path):
+        self.tshark = Tshark(wireshark_path)
+
+    def save_capture_to_file(self, port, cap_file, cap_type='text'):
+        self._port_name_or_index_to_object(port).capture.get_packets(cap_type=XenaCaptureBufferType[cap_type],
+                                                                     file_name=cap_file, tshark=self.tshark)
+
+    def analyze_packets(self, pcap_file, *read_filters):
+        analyser = TsharkAnalyzer()
+        for read_filter in read_filters:
+            analyser.set_read_filter(read_filter)
+        return len(self.tshark.analyze(pcap_file, analyser))
 
     #
     # Basic 'back-door' commands.
