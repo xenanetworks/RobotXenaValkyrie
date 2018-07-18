@@ -5,9 +5,9 @@ Library    xena_robot.XenaRobot
 
 *** Variables ***
 ${WS_DIR}       E:/Program Files/Wireshark
-${CAP_FILE}      C:/temp/robot_cap_file.pcap
-${CHASSIS}      176.22.65.114
-@{PORTS}        ${CHASSIS}/6/4    ${CHASSIS}/6/5
+${CAP_FILE}     C:/temp/robot_cap_file.pcap
+${CHASSIS}      192.168.1.197
+@{PORTS}        ${CHASSIS}/0/0    ${CHASSIS}/0/1
 ${CONFIG_FILE}	${CURDIR}/test_config.xpc
 
 *** Keywords ***

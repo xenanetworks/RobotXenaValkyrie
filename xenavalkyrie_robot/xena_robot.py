@@ -24,11 +24,12 @@ import re
 from importlib import import_module
 from collections import OrderedDict
 
-from xenamanager.xena_app import init_xena
-from xenamanager.xena_port import XenaCaptureBufferType
-from xenamanager.xena_stream import XenaModifierType, XenaModifierAction
-from xenamanager.xena_statistics_view import XenaPortsStats, XenaStreamsStats, XenaTpldsStats
-from xenamanager.xena_tshark import Tshark, TsharkAnalyzer
+from trafficgenerator.tgn_utils import ApiType
+from xenavalkyrie.xena_app import init_xena
+from xenavalkyrie.xena_port import XenaCaptureBufferType
+from xenavalkyrie.xena_stream import XenaModifierType, XenaModifierAction
+from xenavalkyrie.xena_statistics_view import XenaPortsStats, XenaStreamsStats, XenaTpldsStats
+from xenavalkyrie.xena_tshark import Tshark, TsharkAnalyzer
 
 __version__ = '0.3.0'
 ROBOT_LIBRARY_DOC_FORMAT = 'reST'
@@ -51,7 +52,7 @@ class XenaRobot():
         self.logger = logging.getLogger('log')
         self.logger.setLevel(logging.DEBUG)
         self.logger.addHandler(logging.StreamHandler(sys.stdout))
-        self.xm = init_xena(self.logger, user)
+        self.xm = init_xena(ApiType.socket, self.logger, user)
         tshark = None
 
     def add_chassis(self, chassis='None', port=22611, password='xena'):

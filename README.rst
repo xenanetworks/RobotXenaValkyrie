@@ -19,15 +19,15 @@ Installation
 """"""""""""
 This version does not support pip install.
 
-Download xenamanager/robot/xena_robot.py to some folder and add the download folder to the Robot search path.
+Download xenavalkyrie_robot/robot/xena_robot.py to some folder and add the download folder to the Robot search path.
 
 Getting started
 """""""""""""""
-Code samples are available under xenamanager.samples.
+Code samples are available under xenavalkyrie_robot.samples.
 
 Documentation
 """""""""""""
-http://robotxenamanager.readthedocs.io/en/latest/
+http://xenavalkyrie_robot.readthedocs.io/en/latest/
 Under construction...
 
 Contact

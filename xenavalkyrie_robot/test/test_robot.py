@@ -8,11 +8,11 @@ from __future__ import unicode_literals
 from os import path
 import unittest
 
-from xenamanager.robot.xena_robot import XenaRobot
+from xenavalkyrie_robot.xena_robot import XenaRobot
 
-chassis = '176.22.65.114'
-port0 = chassis + '/6/4'
-port1 = chassis + '/6/5'
+chassis = '192.168.1.197'
+port0 = chassis + '/0/0'
+port1 = chassis + '/0/1'
 
 
 class RobotTest(unittest.TestCase):
