@@ -23,6 +23,7 @@ import logging
 import re
 from importlib import import_module
 from collections import OrderedDict
+import site
 
 from trafficgenerator.tgn_utils import ApiType
 from xenavalkyrie.xena_app import init_xena
@@ -31,12 +32,8 @@ from xenavalkyrie.xena_stream import XenaModifierType, XenaModifierAction
 from xenavalkyrie.xena_statistics_view import XenaPortsStats, XenaStreamsStats, XenaTpldsStats
 from xenavalkyrie.xena_tshark import Tshark, TsharkAnalyzer
 
-__version__ = '0.3.0'
+__version__ = '0.4.0'
 ROBOT_LIBRARY_DOC_FORMAT = 'reST'
-
-python_path = os.path.dirname(sys.executable)
-site_packages_path = os.path.join(python_path, 'Lib', 'site-packages')
-pypacker_path = os.path.join(site_packages_path, 'pypacker')
 
 
 class XenaRobot():
@@ -53,7 +50,6 @@ class XenaRobot():
         self.logger.setLevel(logging.DEBUG)
         self.logger.addHandler(logging.StreamHandler(sys.stdout))
         self.xm = init_xena(ApiType.socket, self.logger, user)
-        tshark = None
 
     def add_chassis(self, chassis='None', port=22611, password='xena'):
         """ Add chassis.
@@ -308,9 +304,11 @@ class XenaRobot():
             else:
                 header_py = header.lower() + '.py'
                 header_class = header.upper()
-            for dirpath, _, filenames in os.walk(pypacker_path):
-                if header_py in filenames:
-                    module_name = dirpath[len(site_packages_path) + 1:]
+            for site_packages_path in site.getsitepackages():
+                pypacker_path = os.path.join(site_packages_path, 'pypacker')
+                for dirpath, _, filenames in os.walk(pypacker_path):
+                    if header_py in filenames:
+                        module_name = dirpath[len(site_packages_path) + 1:]
             header_module = import_module(module_name.replace(os.path.sep, '.') + '.' + header_py[:-3])
             header_object = getattr(header_module, header_class)()
             if header.lower() == 'vlan':
@@ -351,43 +349,43 @@ class XenaRobot():
         self._stream_name_or_index_to_object(port, stream).add_modifier(XenaModifierType[modifier_type.lower()],
                                                                         position=int(position))
 
-    def remove_modifier(self, port, stream, position):
+    def remove_modifier(self, port, stream, modifier):
         """ Add packet modifier.
 
         :param port: port index (zero based) or port location as used in reserve command.
         :param stream: stream index (zero based) or stream name.
-        :param position: requested packet modifier position.
+        :param modifier: modifier index (zero based).
         """
-        self._stream_name_or_index_to_object(port, stream).remove_modifier(int(position))
+        self._stream_name_or_index_to_object(port, stream).remove_modifier(int(modifier))
 
-    def get_modifier(self, port, stream, position):
+    def get_modifier(self, port, stream, modifier):
         """ Get packet modifier attributes.
 
         :param port: port index (zero based) or port location as used in reserve command.
         :param stream: stream index (zero based) or stream name.
-        :param position: requested packet modifier position.
+        :param modifier: modifier index (zero based).
         :return: dictionary of <field: value>.
         :rtype: dict of (str, str)
         """
 
-        modifier = self._stream_name_or_index_to_object(port, stream).modifiers[int(position)]
-        return {'mask': modifier.mask,
-                'action': modifier.action,
-                'repeat': modifier.repeat,
-                'min_val': modifier.min_val,
-                'step': modifier.step,
-                'max_val': modifier.max_val}
+        modifier_object = self._stream_name_or_index_to_object(port, stream).modifiers[int(modifier)]
+        return {'mask': modifier_object.mask,
+                'action': modifier_object.action,
+                'repeat': modifier_object.repeat,
+                'min_val': modifier_object.min_val,
+                'step': modifier_object.step,
+                'max_val': modifier_object.max_val}
 
-    def set_modifier_attributes(self, port, stream, position, **attributes):
+    def set_modifier_attributes(self, port, stream, modifier, **attributes):
         """ Set packet modifier attributes.
 
         :param port: port index (zero based) or port location as used in reserve command.
         :param stream: stream index (zero based) or stream name.
-        :param position: requested packet modifier position.
-        :param attributes: dictionary of {attribute: value} to set
+        :param modifier: modifier index (zero based).
+        :param attributes: dictionary of {attribute: value} to set.
         """
 
-        modifier = self._stream_name_or_index_to_object(port, stream).modifiers[int(position)]
+        modifier = self._stream_name_or_index_to_object(port, stream).modifiers[int(modifier)]
         for attribute, value in attributes.items():
             if attribute.lower() == 'action':
                 setattr(modifier, attribute.lower(), XenaModifierAction[value.lower()])
@@ -415,8 +413,17 @@ class XenaRobot():
     # Basic 'back-door' commands.
     #
 
-    def exec_command(self, command):
-        return self.xm.session.chassis_list.values()[0].api.sendQuery(command)
+    def send_command(self, command):
+        """ Send command with no output. """
+        self.xm.session.chassis_list.values()[0].send_command(command)
+
+    def send_command_return(self, command):
+        """ Send command and wait for single line output. """
+        return self.xm.session.chassis_list.values()[0].send_command_return(command)
+
+    def send_command_return_multilines(self, command):
+        """ Send command and wait for multiple lines output. """
+        return self.xm.session.chassis_list.values()[0].send_command_return_multilines(command)
 
     #
     # Private methods.

@@ -24,16 +24,16 @@ class RobotTest(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def hello_world(self):
+    def test_hello_world(self):
         pass
 
-    def investigate_configuration(self):
-        self.robot.reserve_ports(port0, port1)
+    def test_investigate_configuration(self):
+        self.robot.reserve_ports_by_force(port0, port1)
         self.robot.load_config(port0, path.join(path.dirname(path.dirname(__file__)), 'samples', 'test_config.xpc'))
-        self.robot.get_modifier(port0, '0', '4')
+        self.robot.get_modifier(port0, '0', '0')
 
-    def build_configuration(self):
-        self.robot.reserve_ports(port0, port1)
+    def test_build_configuration(self):
+        self.robot.reserve_ports_by_force(port0, port1)
         self.robot.add_stream(port1, 'ip-udp')
         self.robot.add_packet_headers(port1, '0', 'ip', 'udp')
         self.robot.set_packet_header_fields(port1, '0', 'Ethernet', src_s='11:11:11:11:11:11',
@@ -45,5 +45,5 @@ class RobotTest(unittest.TestCase):
         self.robot.set_packet_header_fields(port1, '1', 'VLAN[0]', vid=17)
         self.robot.set_packet_header_fields(port1, '1', 'IP6', src_s='11::11', dst_s='22::22')
         self.robot.add_modifier(port1, '0', '4')
-        self.robot.set_modifier_attributes(port1, '0', '4', min_val='10', max_val='20', action='decrement')
-        self.robot.remove_modifier(port1, '0', '4')
+        self.robot.set_modifier_attributes(port1, '0', '0', min_val='10', max_val='20', action='decrement')
+        self.robot.remove_modifier(port1, '0', '0')

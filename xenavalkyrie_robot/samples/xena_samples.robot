@@ -4,16 +4,18 @@ Library    Collections
 Library    xena_robot.XenaRobot
 
 *** Variables ***
-${WS_DIR}       E:/Program Files/Wireshark
-${CAP_FILE}     C:/temp/robot_cap_file.pcap
+${WS_DIR}       /usr/bin
+${CAP_FILE}     /tmp/robot_cap_file.pcap
 ${CHASSIS}      192.168.1.197
-@{PORTS}        ${CHASSIS}/0/0    ${CHASSIS}/0/1
+${PORT1}        0/0
+${PORT2}        0/1
+@{PORTS}        ${CHASSIS}/${PORT1}    ${CHASSIS}/${PORT2}
 ${CONFIG_FILE}	${CURDIR}/test_config.xpc
 
 *** Keywords ***
 Reserve All Ports
     [Documentation]    Reserve ports and load same configuration on all ports.
-    Log List           ${PORTS}     
+    Log List           ${PORTS}
     Reserve Ports      @{PORTS}
     :FOR    ${PORT}    IN    @{PORTS}
     \    Load Config        ${PORT}    ${CONFIG_FILE}
@@ -38,7 +40,7 @@ Investigate Configuration
     Log Dictionary         ${header}
     &{header} =            Get Packet Header    @{PORTS}[0]    1    IP6
     Log Dictionary         ${header}
-    &{modifier} =          Get Modifier    @{PORTS}[0]    0    4
+    &{modifier} =          Get Modifier    @{PORTS}[0]    0    0
     Log Dictionary         ${modifier}
 
 Build Configuration
@@ -60,17 +62,15 @@ Build Configuration
     Set Packet Header Fields     @{PORTS}[1]    1    VLAN[0]    vid=17
     Set Packet Header Fields     @{PORTS}[1]    1    IP6    src_s=11::11    dst_s=22::22
     Add Modifier           @{PORTS}[1]    0    4 
-    Set Modifier Attributes      @{PORTS}[1]    0    4    min_val=10    max_val=20    action=decrement
+    Set Modifier Attributes      @{PORTS}[1]    0    0    min_val=10    max_val=20    action=decrement
 
 Miscelenious Operations
-    Pass Execution         Dont care at this point...
     [Documentation]        Run miscelenious commands
-    ${c_comment} =         Exec Command    c_comment ?
-    Log                    c_comment = ${c_comment}
-    ${p_comment} =         Exec Command    6/4 p_comment ?
+    ${p_comment} =         Send Command Return    ${PORT1} p_comment ?
     Log                    p_comment = ${p_comment}
-    ${rc} =                Exec Command    6/4 p_comment "new comment"
-    Log                    rc = ${rc}
+    Send Command           ${PORT1} p_comment "new comment"
+    ${p_config} =          Send Command Return Multilines    ${PORT1} p_config ?
+    Log                    p_config = ${p_config}
 
 Run Traffic
     [Documentation]    Run traffic and get statistics
@@ -80,11 +80,12 @@ Run Traffic
     Stop Capture       0
     &{stats} =         Get Statistics    Port
     ${keys} =          Get Dictionary Keys    ${stats}
-    &{port_stats}      Set Variable    &{stats}[176.22.65.114/6/4]
+    ${port}            Set Variable    @{PORTS}[1]
+    &{port_stats}      Set Variable    &{stats}[${port}]
     Log Dictionary     ${port_stats}
     &{pt_total_stats}  Set Variable    &{port_stats}[pt_total]
     Log Dictionary     ${pt_total_stats}
-    Should Be Equal As Numbers    &{pt_total_stats}[packets]    16000
+    Should Be Equal As Numbers    &{pt_total_stats}[packets]    160
     Create Tshark      ${WS_DIR}
     Save Capture To File    0    ${CAP_FILE}    pcap
     ${num_packets} =   Analyze Packets    ${CAP_FILE}    ip.src    ip.dst
