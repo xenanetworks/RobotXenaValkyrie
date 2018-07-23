@@ -1,7 +1,7 @@
 *** Settings ***
 Library    OperatingSystem
 Library    Collections
-Library    xena_robot.XenaRobot
+Library    xenavalkyrie.xena_robot.XenaRobot    socket    robot    localhost
 
 *** Variables ***
 ${WS_DIR}       /usr/bin
@@ -66,10 +66,10 @@ Build Configuration
 
 Miscelenious Operations
     [Documentation]        Run miscelenious commands
-    ${p_comment} =         Send Command Return    ${PORT1} p_comment ?
+    ${p_comment} =         Send Command Return    ${CHASSIS}    ${PORT1} p_comment ?
     Log                    p_comment = ${p_comment}
-    Send Command           ${PORT1} p_comment "new comment"
-    ${p_config} =          Send Command Return Multilines    ${PORT1} p_config ?
+    Send Command           ${CHASSIS}    ${PORT1} p_comment "new comment"
+    ${p_config} =          Send Command Return Multilines    ${CHASSIS}    ${PORT1} p_config ?
     Log                    p_config = ${p_config}
 
 Run Traffic

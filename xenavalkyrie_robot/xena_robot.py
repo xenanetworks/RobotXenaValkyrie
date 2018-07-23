@@ -44,12 +44,19 @@ class XenaRobot():
     # Session management.
     #
 
-    def __init__(self, user=None):
+    def __init__(self, api='socket', user=None, ip=None, port=57911):
+        """ Create Xena Valkyrie app object.
+
+        :param api: API type - socket or rest
+        :param user: user name for session and login
+        :param ip: optional REST server IP address
+        :param port: optional REST server TCP port
+        """
         user = user if user else getpass.getuser()
         self.logger = logging.getLogger('log')
         self.logger.setLevel(logging.DEBUG)
         self.logger.addHandler(logging.StreamHandler(sys.stdout))
-        self.xm = init_xena(ApiType.socket, self.logger, user)
+        self.xm = init_xena(ApiType[api], self.logger, user, ip, port)
 
     def add_chassis(self, chassis='None', port=22611, password='xena'):
         """ Add chassis.
@@ -331,7 +338,7 @@ class XenaRobot():
         headers = self._stream_name_or_index_to_object(port, stream).get_packet_headers()
         header_body = self._get_packet_header(header=header, headers=headers)
         for field, value in fields.items():
-            setattr(header_body, field, int(value) if unicode(value).isdecimal() else value)
+            setattr(header_body, field, int(value) if str(value).isdigit() else value)
         self._stream_name_or_index_to_object(port, stream).set_packet_headers(headers)
 
     #
@@ -413,17 +420,17 @@ class XenaRobot():
     # Basic 'back-door' commands.
     #
 
-    def send_command(self, command):
+    def send_command(self, chassis, command):
         """ Send command with no output. """
-        self.xm.session.chassis_list.values()[0].send_command(command)
+        self.xm.session.chassis_list[chassis].send_command(command)
 
-    def send_command_return(self, command):
+    def send_command_return(self, chassis, command):
         """ Send command and wait for single line output. """
-        return self.xm.session.chassis_list.values()[0].send_command_return(command)
+        return self.xm.session.chassis_list[chassis].send_command_return(command)
 
-    def send_command_return_multilines(self, command):
+    def send_command_return_multilines(self, chassis, command):
         """ Send command and wait for multiple lines output. """
-        return self.xm.session.chassis_list.values()[0].send_command_return_multilines(command)
+        return self.xm.session.chassis_list[chassis].send_command_return_multilines(command)
 
     #
     # Private methods.
@@ -439,7 +446,8 @@ class XenaRobot():
         """
         :rtype: xenamanager.xena_port.XenaPort
         """
-        return self.ports.values()[int(name_or_index)] if name_or_index.isdecimal() else self.ports[name_or_index]
+        return (list(self.ports.values())[int(name_or_index)] if name_or_index.isdecimal()
+                else self.ports[name_or_index])
 
     def _stream_name_or_index_to_object(self, port, name_or_index):
         """

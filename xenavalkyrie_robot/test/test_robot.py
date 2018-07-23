@@ -18,7 +18,7 @@ port1 = chassis + '/0/1'
 class RobotTest(unittest.TestCase):
 
     def setUp(self):
-        self.robot = XenaRobot()
+        self.robot = XenaRobot(api='rest', user='robot', ip='localhost')
         self.robot.add_chassis(chassis)
 
     def tearDown(self):
@@ -47,3 +47,8 @@ class RobotTest(unittest.TestCase):
         self.robot.add_modifier(port1, '0', '4')
         self.robot.set_modifier_attributes(port1, '0', '0', min_val='10', max_val='20', action='decrement')
         self.robot.remove_modifier(port1, '0', '0')
+
+        self.robot.start_capture('0')
+
+    def test_misc_operations(self):
+        print(self.robot.send_command_return(chassis, '0/0 p_comment ?'))

@@ -25,6 +25,14 @@ Getting started
 """""""""""""""
 Code samples are available under xenavalkyrie_robot.samples.
 
+Assuming you copied the xena_robot under xenavalkyrie package directory then you can import the library as following:
+
+Start over CLI API:
+Library    xenavalkyrie.xena_robot.XenaRobot    socket    *user_name*
+
+Start over REST API:
+Library    xenavalkyrie.xena_robot.XenaRobot    rest    *user_name*  *server_ip*    *optipnal_server_tcp_poty*   
+
 Documentation
 """""""""""""
 http://xenavalkyrie_robot.readthedocs.io/en/latest/
