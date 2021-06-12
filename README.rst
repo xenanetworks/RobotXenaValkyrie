@@ -33,11 +33,10 @@ Library    xenavalkyrie.xena_robot.XenaRobot    socket    *user_name*
 Start over REST API:
 Library    xenavalkyrie.xena_robot.XenaRobot    rest    *user_name*  *server_ip*    *optipnal_server_tcp_poty*   
 
-Documentation
-"""""""""""""
-http://xenavalkyrie_robot.readthedocs.io/en/latest/
-Under construction...
-
 Contact
 """""""
 Feel free to contact me with any question or feature request at yoram@ignissoft.com
+
+Known Issues
+============
+- Get packet header supports only Ethernet/Vlan/IP[v6], no higher layers.

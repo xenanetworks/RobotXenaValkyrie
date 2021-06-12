@@ -279,17 +279,14 @@ class XenaRobot():
         :return: dictionary of <field: value>.
         :rtype: dict of (str, str)
         """
-
         header_body = self._get_packet_header(port, stream, header)
-        fields_str = self._get_packet_header(port, stream, header)._summarize()
+        fields_str = re.sub('vlan.*----------', '', header_body._summarize(), re.MULTILINE, re.DOTALL)
         fields = OrderedDict()
-        for field_value in re.sub('vlan=\[.*\], ', '', re.findall('\((.*)\)', fields_str)[0]).split(','):
-            field, value = field_value.strip().split('=')
-            fields[field] = value
-            try:
-                fields[field + '_s'] = getattr(header_body, field + '_s')
-            except Exception as _:
-                pass
+        for field in fields_str.split("\n"):
+            key_values = field.strip().split('=')
+            if len(key_values) > 1:
+                key = key_values[0].split(" ")[0].strip()
+                fields[key.strip()] = key_values[-1].strip()
         return fields
 
     def add_packet_headers(self, port, stream, *headers):
@@ -467,7 +464,7 @@ class XenaRobot():
         elif header.lower().startswith('vlan'):
             header_body = headers.vlan[int(re.findall('vlan\[([\d])\]', header.lower())[0])]
         else:
-            header_body = getattr(headers, header.lower())
+            header_body = headers.upper_layer
         return header_body
 
 
