@@ -1,4 +1,8 @@
 
+🔴 **IMPORTANT** 🔴 **RobotXenaValkyrie is now End-of-Life. It will be reborn under Xena OpenAutomation.**
+
+
+
 This package implements Python Robot framework API for Xena traffic generator.
 
 Functionality
